@@ -11,7 +11,13 @@ Task: per-neuron mean activation of the final layer of a bias-free ReLU MLP, wid
 | Estimator | `estimators/sweep.py` — whitened, antithetic, float32 Monte-Carlo sample mean with eight exact cost reductions |
 | Reliability | 0/50 public MLPs failed; 0/1000 on the local `full` split; worst-case budget utilisation 0.9040 on adversarial inputs |
 | Trajectory | 3.405e-07 → 2.700e-07 → 2.240e-07 → 1.834e-07 (#324358, rank #54) → **1.730e-07** |
-| Constructible frontier | rank 4 at **4.62e-08**. We finish **3.7× above it** and cannot account for the gap — see §9. |
+| Densest band of the board | twelve entries at **4.6e-08 – 1.1e-07**; we finish **3.7×** above its leading edge and cannot account for the gap — see §9. |
+
+> **Every score in this document is a 50-MLP public-leaderboard number**, including the ones above.
+> The rules are explicit that *"the public-leaderboard score visible during the Competition does not
+> determine prize ranking"* (§6) and that phase standings combine all 100 MLPs. §8.2 measures what a
+> 50-MLP board can and cannot resolve — roughly, nothing under 30% — and we apply that to our own
+> results as strictly as to anyone's.
 
 All numbers are dated 2026-08-07 unless stated. Where a number describes a competitor it is
 arithmetic on figures **they published**, and it is labelled as such.
@@ -38,7 +44,7 @@ Everything else is that antisymmetry in a particular coordinate system:
 | result | § |
 |---|---|
 | Max-entropy reconstruction from **six exact moments** reaches bias² = **5.08e-09**, zero fitted parameters — so the deterministic branch's reconstruction step is *solved*, and the blockage is entirely in acquiring the first two moments of `z₃₂`, which are the answer one layer up | 3.1 |
-| A **model-free** bound (no fit, no extrapolation) puts the constructible frontier at cubature **degree 5** — the last rung that fits the budget — and a 10× improvement at **degree 7**, which costs **18.9 budgets for one evaluation**. The cost of exactness steps by 86× between the rung that suffices and the rung above it | 4.2 |
+| A **model-free** bound (no fit, no extrapolation) says reaching the board's dense band needs cubature **degree ≥ 4**, so degree 5 — the last rung that fits the budget. The measured surviving variance then says a degree-5 rule *delivers* only 3.02× against the 8.3× needed, and the degree that would actually suffice is **≈ 26**, at 3e16 budgets. Necessary and sufficient sit 22 rungs apart | 4.2 |
 | We **built** the degree-5 rule (66,307 nodes, exact to 1.8e-15) and measured it **70× worse**. Degree-5 exactness *forces* `w₁r⁴ = −n²(n−7)/(2(n+1)²) < 0`, collapsing effective sample size to **941 of 66,306**. Any positive-weight rule would pay ≤1.5× | 4.3 |
 | An **exact** multilevel telescoping identity — every level exact, no coarse surrogate — that loses anyway by a two-line allocation argument, for **any** plausible weight profile (12.3–16.5×) | 4.6 |
 | A published mechanism reproduced and its stated explanation refuted: the sample mean **commutes** with a linear map, measured **bit-identical, 0.000e+00**, so identifying a neuron as linear cannot reduce variance. The real gain is cost, and at fixed budget the two are perfectly confounded | 5 |
@@ -96,13 +102,25 @@ are retracted in place, with the measurement that caught each.
 
 ## Contribution statement
 
-**This is a negative-results, bounds and methodology contribution, not a new estimator.** What we
-ship is a whitened, antithetic, float32 Monte-Carlo sample mean with structural cost reductions.
-Every ingredient is standard; their combination is worth **2.17×** over plain Monte Carlo at
-equal compute (§6.1, three independent routes agreeing inside 3%), and the cost reductions roughly
-another 3.1× — but we do not claim any of it as novelty.
+**The one thing here with a measured performance impact and a claim to novelty** is §6.3: four
+exact algebraic identities that cut metered cost by **3.90% per MLP with no statistical change**,
+because each is an identity or an exact re-pricing of the same arithmetic rather than an
+approximation. Measured paired on **1,000** real MLPs, the FLOP reduction is an exact, deterministic
+**1.0406×** on the score — the same on every machine and every MLP of this shape — and the realised
+adjusted-score gain is **1.0834×** (`t` = +6.13, 0/1000 failed). It took our public score from
+1.834e-07 to **1.730e-07**. The four are the antithetic layer-0 mirror, the symmetry-priced Gram,
+Strassen in the lead pass, and a Cholesky whitener that is *distributionally* exact rather than
+merely close. Each is one function in `estimators/sweep.py` and each can be switched off
+independently, so the impact is checkable without taking our word for it.
 
-The results we believe are new:
+**Everything else here is a negative result, a bound, or a measurement protocol.** The rest of what
+we ship — a whitened, antithetic, float32 Monte-Carlo sample mean with structural cost reductions —
+is built from standard ingredients. Their combination is worth **2.17×** over plain Monte Carlo at
+equal compute (§6.1, three routes agreeing inside 3%) and the cost reductions roughly another 3.1×,
+and we do not claim any of that as novel.
+
+We think the bounds are worth more than the estimator, and the rules ask for negative results
+explicitly, so they are the bulk of this document. The results we believe are new:
 
 1. **The availability–value antisymmetry** (§2), with the oracle-value ladder that measures it and
    the identity that explains why layer 31 is worth ~50× and is unreachable.
@@ -110,10 +128,11 @@ The results we believe are new:
    the deterministic branch's reconstruction step is not the blocker, and locating the blocker
    precisely on one vector is a sharper statement than "deterministic methods don't work".
 3. **The model-free exactness-degree bound** (§4.2): `D ≥ [ln(1−S) − ln R(ρ)]/ln(1/ρ)` from
-   `c_d ≥ 0`, with no inversion, no fit and no extrapolation. It places the constructible frontier
-   at degree 5 — the last rung inside the budget — and a 10× improvement at degree 7, which costs
-   18.9 budgets per evaluation. It replaces our own earlier extrapolated `D ≈ 1.3e4`, a ~900×
-   correction.
+   `c_d ≥ 0`, with no inversion, no fit and no extrapolation — and, paired with the measured
+   surviving-variance curve, the gap between the degree that is *necessary* and the degree that
+   would *suffice*. It replaces our own earlier extrapolated `D ≈ 1.3e4`, a ~900×
+   correction to the *bound*. A necessary lower bound cannot show the old figure was too high —
+   only that the argument which produced it was unsound.
 4. **The negative-weight obstruction to degree-5 cubature** (§4.3), with the built rule, the
    closed-form weight, the ESS collapse, and the positive-weight counterfactual that attributes
    the entire 47× loss to weight negativity rather than to construction quality.
@@ -208,12 +227,15 @@ a fourth digit, and we recommend everyone else do the same.
 
 ## 2. The organising result: availability and value sit at opposite ends of the network
 
-Every variance annihilator needs a function with an **exactly known Gaussian expectation** that is
-**cheap to evaluate**. That is the entire class. Enumerating it is short:
+Every *additive control variate*, and every *exactness-based node rule*, needs a function with an
+**exactly known Gaussian expectation** that is **cheap to evaluate**. That is the entire class — and
+we mean it narrowly. Schemes that change the integrand rather than the integration rule
+(conditioning, Rao–Blackwellisation, internal anchoring) fall outside it and are treated separately
+in §2.3 and §3. Enumerating what it does cover is short:
 
 | class | exactly known mean? | cost | measured value |
 |---|---|---|---|
-| polynomials of degree ≤ D, as node exactness | yes | `C(256+m, m)` nodes | D = 5 is the last affordable rung; ceiling 3.02× (§4) |
+| polynomials of degree ≤ D, as node exactness | yes | `C(256+m, m)` nodes | D = 5 is the last affordable rung, and it is provably insufficient (§4.2) |
 | polynomials of degree ≤ D, as explicit control variate | yes | `C(256+D, D)` FLOPs/sample; D = 4 is 44× a forward pass | priced out |
 | functions of a `d`-dimensional projection | yes (`d`-dim quadrature) | cheap | residual chaos has effective dimension `d ≳ 224` (§4.4) |
 | functionals of layer 1 (ReLU mean, arc-cosine covariance) | **yes, closed form** | free | **1.083×** (§6.3) |
@@ -280,9 +302,11 @@ The layer-31 mean is not *information arriving* at layer 31; it is one of two te
 decomposition of the answer. Which is why it is worth 50× — and why it is not obtainable.
 
 **Required accuracy.** Perturbing the layer-31 anchor by relative `eps` gives
-`bias² = 0.945·eps²` over five decades. Reaching raw MSE ≤ 1e-08 needs `eps* = 1.03e-04` — **40×
-tighter than the ensemble's own layer-31 sample-mean accuracy** (`0.261/√k`, = 4.1e-03 at
-k = 4,096). And `W₃₂` is invertible, so the 256 order-1 marginal moments of `z₃₂` *are* `E[y₃₁]`
+`bias² = 0.945·eps²` over five decades, so reaching raw MSE ≤ 1e-08 needs `eps* = 1.03e-04`. The
+ensemble's own layer-31 sample-mean accuracy is `0.261/√k`, so the shortfall is **`k`-dependent and
+has to be quoted with its `k`**: 40× at the k = 4,096 of the anchoring sweep, and **10× at our
+shipped k = 64,512** (1.03e-03) — ten times tighter than the thing you already have, which in
+mean-squared terms is a factor of 100 in samples. And `W₃₂` is invertible, so the 256 order-1 marginal moments of `z₃₂` *are* `E[y₃₁]`
 under a linear bijection: measured amplification `E[y₃₁] → E[z₃₂]` is 2.001 (= mean `‖w_i‖²`) and
 attenuation `E[z₃₂] → E[ReLU]` is 0.461 (= mean `Φ(α)²`), net **0.922**. There is no attenuation to
 hide behind and no shortcut: the oracle is not "not yet obtained", **it is the problem, one layer
@@ -378,7 +402,9 @@ through the meter, the analytic pass costs 6.56e9 FLOPs and the whole route is *
 The companion paper (arXiv:2605.05179; Wu, Lecomte, Winer, Robinson, Hilton, Christiano, ARC)
 tracks joint cumulants to order `K`. The shipped `examples/03_covariance_propagation.py` **is** its
 `K = 2` instance — Algorithm 2 diffs line-for-line against the shipped file. So there is no free win
-from "fixing" the baseline, and `K = 3` promises an `n`-fold error reduction.
+from "fixing" the baseline. Under the paper's own conjecture `MSE_vn ≤ c_K (L/n)^K`, incrementing
+`K` multiplies the error by `L/n` — an **8-fold** reduction at `L = 32`, not the `n`-fold available
+at the shallow depths the paper works at.
 
 Cost at `n = 256, L = 32` against `B = 2.72e11`, from the paper's own Table 1 and Appendix J:
 
@@ -456,31 +482,46 @@ degree. Evaluating the bound over the ρ table above (it is maximised at ρ = 0.
 targets, ρ = 0.90 for the looser one), against the Möller node-count wall `k ≥ C(256+m, m)` for
 `D = 2m+1` and a per-node cost of 1.8e6 FLOPs:
 
-| target | required `S` | **`D ≥`** | rung | nodes | cost | affordable? |
-|---|---|---|---|---|---|---|
-| **the measured frontier, 4.62e-08 (3.74× from us)** | **12.1%** | **3.77** | **5** | **33,153** | **0.22× budget** | **✓** |
-| 10× on our shipped score | 4.53% | 6.82 | 7 | 2,862,209 | **18.9× the entire budget for one evaluation** | ✗ |
-| adjusted 1e-09 | 0.26% | 14.95 | 15 | 1.59e13 | — | ✗ |
+| target | required `S` | gain needed vs plain MC | **`D ≥`** (necessary) |
+|---|---|---|---|
+| **the measured frontier, 4.62e-08 (3.74× from us)** | **12.1%** | **8.3×** | **3.8** |
+| 10× on our shipped score | 4.53% | 22.1× | 6.8 |
+| adjusted 1e-09 | 0.26% | 382× | 15.0 |
 
-Read the top row carefully, because it is the most useful thing in this section. **The
-constructible frontier sits exactly at the last affordable rung.** Degree 5 costs 22% of the
-budget and, at full efficiency, would buy 3.02× over plain MC — enough. Degree 7, one rung up,
-costs nineteen budgets for a single evaluation. There is no gentle slope here: the cost of
-exactness steps by a factor of 86 between the rung that suffices and the rung above it.
+**This is a lower bound, and the distinction is the whole point.** It says a rule reaching the
+frontier must be at least degree 4 — so degree 5, the next Möller rung. It does *not* say a
+degree-5 rule gets there. For that, read the measured surviving mass, `S(D)/R(1)` = 0.743 / 0.515 /
+0.422 / **0.331** / 0.267 / 0.211 at `D` = 1/2/3/**5**/7/9, reaching 0.094 only at `D = 32`:
 
-So the question this benchmark actually poses on the stochastic side is narrow and concrete:
-**is there a positive-weight degree-5 cubature rule at n = 256 with O(n²) nodes?** §4.3 is what
-happens when you build the known one.
+| | necessary degree | degree that **actually delivers** it | nodes at that degree | cost |
+|---|---|---|---|---|
+| frontier | 3.8 | **≈ 26** | 4.6e21 | 3e16 × budget |
+| 10× | 6.8 | **≈ 60** | 3.8e40 | 3e35 × budget |
 
-The surviving-variance table shows why nothing lower will do: `S(D)/R(1)` = 0.743 / 0.515 / 0.422 /
-0.331 / 0.267 / 0.211 at `D` = 1/2/3/5/7/9, reaching 0.094 only at `D = 32` and 0.0068 at
-`D = 256`. The variance is not concentrated at low degree.
+against a last affordable rung of **degree 5** (33,153 nodes, 0.22× budget; degree 7 is already
+**18.9 budgets for one evaluation**). A degree-5 rule at full efficiency buys 3.02× over plain MC
+where the frontier needs 8.3× — **short by 2.7×**, before any question of whether such a rule can
+be built.
 
-*(An earlier draft of this section attached `S ≤ 0.29% ⇒ D ≥ 14.7` to "a 10× improvement". That
-`S` is the requirement for an adjusted score of 1e-09 — about 173× below what we ship, and a
-target §9 explicitly abandons. The bound was right; the goal it was labelled with was wrong by a
-factor of ~17, which made the wall look far more distant than it is. The corrected table is
-strictly worse news for the 1e-09 story and strictly better news as a research direction.)*
+> The two columns bracket the honest answer: exactness of the degree we can *afford* is provably
+> insufficient, and exactness of the degree that would *suffice* is 16 orders of magnitude beyond
+> the budget. Between them sits the only question with a finite answer — **is there a
+> positive-weight degree-5 rule at n = 256 with `O(n²)` nodes?** — which would close the 2.7× only
+> if the chaos spectrum is kinder than measured. §4.3 is what happens when you build the known one.
+
+*(Provenance, because the two columns are not equally solid: the lower bound is model-free — it
+follows from `c_d ≥ 0` and the measured `R(ρ)` curve, with no inversion and no fit. The `S(D)`
+table is the output of a regularised NNLS inversion whose own author notes that beyond `d = 3` the
+individual coefficients are regularisation-dominated, with wide LP bands. Treat the "necessary"
+column as a proof and the "actually delivers" column as a measurement with error bars.)*
+
+*(This section has been wrong twice and we record both. An earlier draft attached
+`S ≤ 0.29% ⇒ D ≥ 14.7` to "a 10× improvement"; that `S` is the requirement for an adjusted score of
+1e-09, ~173× below what we ship and a target §9 abandons. Correcting it, we then over-corrected —
+reading the necessary-degree column as though it were sufficient, and concluding that the board's
+dense band "sits exactly at the last affordable rung". It does not: degree 5 is *necessary* and
+falls 2.7× short of *sufficient*. Both errors ran in the same direction, making the wall look
+closer than it is, which is the direction an author's errors tend to run.)*
 
 > **This corrects our own earlier claim of `D ≈ 1.3e4`**, which came from fitting `C(D) ∝ D^−0.574`
 > on `D ∈ {1,3}` and pushing it four orders out. `S(D)` is not a power law — the model-free log-log
@@ -495,10 +536,14 @@ rotation to a worst relative error of **1.835e-15** over every monomial of degre
 correctly *failing* at degree 6 (`x₁⁶` gives 14.662 against a true 15). Head-to-head at the
 identical node count `k = 66,306`, paired on 128 pairs (64 MLPs × 2 reps, common seeds):
 
-| estimator | MSE | FOM = `C·c` |
+| estimator | MSE (at equal `k`) | FOM = `C·c` |
 |---|---|---|
 | whitened + antithetic MC | 3.6955e-07 | 5.060e4 |
-| **degree-5 Mysovskikh** | **2.6048e-05** | **3.113e6 — 70.5× worse, `t` = 15.92** |
+| **degree-5 Mysovskikh** | **2.6048e-05 — 70.5× worse, `t` = 15.92** | **3.113e6 — 61.5× worse** |
+
+*(The two ratios differ because the degree-5 rule's per-node cost is lower — 1.802e6 against
+2.065e6. 70.5× is the accuracy penalty at equal node count; 61.5× is the penalty on the
+budget-invariant figure of merit.)*
 
 **The failure is forced by exactness, not by our construction.** Degree-5 exactness pins the
 weights:
@@ -517,9 +562,10 @@ Two further facts close the class. First, **a random rotation does not make the 
 positive homogeneity makes the radial part deterministic, leaving a relative bias of −2.910e-3 and
 an MSE floor of 7.4e-06, removable only by rescaling with `E‖x‖`. Second, the *best conceivable*
 degree-5 rule — equal weights, ESS equal to the node count — gains **1.55×** (MLP bootstrap
-1.455 ± 0.028; model-free bound ≤ 1.41). Against the 3.02× that §4.2 says degree 5 would need to
-deliver to reach the frontier, 1.55× is short by about 2× — so even a *perfect* degree-5 rule is
-not obviously sufficient, and the one that exists is 70× the wrong side of it.
+1.455 ± 0.028; model-free bound ≤ 1.41) **measured against the whitened+antithetic estimator we
+ship** — equivalently ~3.4× against plain MC, consistent with §4.2's chaos-mass ceiling of 3.02×.
+Either way it is short of the 8.3× the frontier needs. **So even a perfect degree-5 rule does not
+reach the frontier, and the one that exists is 70× the wrong side of it.**
 
 *One positive by-product, kept because it is nearly free:* a stack of 8 rotated simplices under one
 Haar rotation is a drop-in ensemble that skips whitening's 14.7% overhead for 1.1%, measuring
@@ -586,10 +632,14 @@ the first seven layers — uniform weight on layers 1–8 already gives 1.04× �
 > multilevel pays `l` per sample per level.** The exactness of the identity buys nothing against
 > that.
 
-*We flag one weakness deliberately:* the per-layer weight table `w_l` behind the 12.3× is not
-shipped; only the two anchor points above are recorded. That is why the paragraph is written around
-the profile-independence of the conclusion (12.3–16.5× across the entire admissible range) rather
-than around a single number.
+*Two things stated precisely, because the loose versions are wrong.* First, the conclusion is
+profile-**dependent**: the ratio runs from 1/32 (all variance at level 1, where multilevel would win
+32×) up to the Cauchy–Schwarz ceiling of 16.5×, crossing 1 at roughly "all mass in the first eight
+levels". What we claim is that the *measured* profile is nowhere near that crossing, so the
+conclusion is robust across the profiles this network plausibly has — 12.3× at the measured shape,
+14.9× uniform — not across every profile imaginable. Second, the per-layer weight table `w_l` behind
+the 12.3× is not shipped; only the two anchor points above are recorded, which is why we lean on the
+profile-robustness rather than on that one number.
 
 ### 4.7 The rest of the stochastic ledger, measured and closed
 
@@ -611,7 +661,7 @@ point. Independent rotations are mandatory.
 
 ---
 
-## 5. A correct result with a wrong explanation
+## 5. A correct result, and an explanation that cannot be the reason
 
 The best **publicly written-up** method on the Phase 1 board is AIcrowd topic 18106 — adjusted
 1.551e-07, raw final-layer MSE 2.18e-07 at utilisation 0.71, method published in full.
@@ -661,8 +711,9 @@ that carries the argument.)*
 The class the mechanism targets dominates the error and the mechanism moves it by exactly zero; the
 class it does "solve" contributes 0.00%, because ReLU already emits exact zeros there.
 
-The strong reading — a whole always-on *layer* collapsing — needs every neuron on, which under an
-independence approximation is `P ≈ 0.268²⁵⁶ ≈ 1e-146`. The weak reading is well-defined and we
+The strongest form of the idea — a whole always-on *layer* collapsing, **which we do not attribute
+to anyone; it is our own extrapolation** — needs every neuron on, which under an independence
+approximation is `P ≈ 0.268²⁵⁶ ≈ 1e-146`. The weak reading is well-defined and we
 priced it: eliminating layer `l` on its always-on set `A` trades two matmuls for three, giving a
 cost ratio `(3 − 2f)/2`, **below 1 only for `f > 1/2`**. Measured `f` rises monotonically with depth
 and **peaks at 0.294** in the last layer. Plugging the measured layer-30 numbers: 61,907 vs 57,960
@@ -699,10 +750,15 @@ estimator is 2.24e-07 against their public 1.551e-07.
 
 ### 5.4 The lesson
 
-The published result is real, we reproduced its direction, and we shipped it. What is wrong is the
-explanation, and the failure mode is general: **the mechanism was stated in the language of variance
-reduction, the observable it moved was cost, and under a fixed-budget `1/k` estimator those two are
-perfectly confounded in every raw-MSE number.** Believing the stated mechanism would have sent us to
+The published result is real, we reproduced its direction, and we shipped it. What we can show is
+that *linearity* — in the strong form we generalised it to, and in the narrow form their write-up
+states — cannot be the source of the gain, because a sample mean commutes with a linear map. If our
+reading of their write-up is wrong, that is the first thing to check. The failure mode it
+illustrates is general: **the *always-on collapse* was stated in the language of
+variance reduction, the observable it moved was cost, and under a fixed-budget `1/k` estimator those
+two are perfectly confounded in every raw-MSE number.** (In fairness their write-up states cost
+mechanisms separately and explicitly — Strassen, row bucketing — so the confound is in the one leg,
+not in their account as a whole.) Believing the stated mechanism would have sent us to
 build the layer collapse (needs `f > 1/2`, measures `f ≤ 0.294`) and to freeze always-on neurons
 (65–270× worse). Testing *why* it worked converted a refuted 1.74× story into a verified 1.23×, and
 redirected the remaining effort to FLOP accounting.
@@ -712,6 +768,49 @@ We were not immune to the same error — see §7.
 ---
 
 ## 6. What we ship, and what each part is worth
+
+### 6.0 The estimator in one page
+
+`estimators/sweep.py`, submission #325573. Everything is inside `flopscope` primitives; the only
+imports are `math`, `flopscope`, `flopscope.numpy` and `whestbench`.
+
+```
+predict(mlp, budget):
+  k  = sample_count(budget)            # worst-case sizing: assume NOTHING prunes (§6.4)
+  xh = standard_normal(k/2, n)         # float32; the ensemble is X = [xh ; -xh]
+
+  G    = (2/k) * einsum("ki,kj->ij", xh, xh)     # symmetric-priced Gram; x^T x == 2 xh^T xh
+  W0f  = G^(-1/2) @ W0                           # whitener FUSED into the first weight matrix
+
+  for each block of xh:
+      Z  = W0f^T @ xh_block^T                    # ONE matmul for both antithetic halves
+      Y  = [ ReLU(Z) , ReLU(Z) - Z ]             # ReLU(-z) == ReLU(z) - z, exact in IEEE
+
+      for l in 1..6:        Y = relu_step(Y, W_l)          # head: dense, exact row pruning
+      mask = lead_pass(Y[:, :1024])                        # 1024 samples at full width -> static mask
+      for l in 7..30:       Y = relu_step(Y, W_l[mask])    # tail: reduced index space
+      row_sums += column sums of Y at every layer
+
+  scored layer: classify columns dead / always-on / kink, evaluate only what is needed
+  return row_sums / k                                      # shape (depth, width)
+```
+
+`relu_step` drops the identically-zero rows of `Y` together with the matching rows of `W_l` — an
+algebraic identity, so the estimate is unchanged and only the MAC count falls — and multiplies with
+Strassen–Winograd at recursion depth 2.
+
+| ledger row (§6.1) | where it lives | what it is |
+|---|---|---|
+| whitened ensemble | `G`, `W0f` | force the empirical first two moments to their exact values, then fuse the transform into `W₀` so it costs `n³` rather than `k·n²` |
+| antithetic pairing | `X = [xh ; −xh]` | every odd empirical moment is exactly zero, for a negate and a concatenate |
+| float32 | throughout | exactly half the metered price of float64 (§6.2) |
+| exact dead-column pruning | `relu_step` | a column that is zero on every sample of the block contributes nothing to the next layer |
+| lead-block masking | `lead_pass` | 1,024 samples at full width freeze a static alive set for the remaining ~98% — the one **approximate** step, bias² = 1.5e-09, 0.47% of MSE |
+| Strassen | `relu_step` | depth 2, the effective-compute optimum (§6.2) |
+| the four identities (§6.3) | layer-0 mirror, symmetric Gram, lead-pass Strassen, Cholesky whitener | exact re-pricings of the same arithmetic |
+
+**Every step is exact except one.** The lead-block mask is the only place the estimator is not
+algebraically identical to plain whitened Monte Carlo, and §6.4 prices its bias against its saving.
 
 ### 6.1 The component ledger
 
@@ -795,9 +894,12 @@ re-pricing of the same arithmetic:
 | Strassen in the lead pass | 0.3% | the one place still calling plain `@` |
 | Cholesky whitener instead of `eigh` | 0.09% | **distributionally exact**: `x L^{−T} = x R^{−1} = Q` from the thin QR, and both the Cholesky and symmetric roots are Haar on the Stiefel manifold, hence identical in law. Measured raw-MSE ratio 1.0006×, `t` = +0.06 — a clean null, as predicted |
 
-Paired on **1,000** real MLPs: FLOPs/MLP 1.7906e11 → 1.7207e11 (3.90% cheaper, exact and
-deterministic on every machine and every MLP of this shape), adjusted score **1.0834×**, `t` = +6.13,
-0/1000 failed. Binding adversarial utilisation improved 0.9170 → 0.9040. It predicted a public score
+Paired on **1,000** real MLPs — and the decomposition matters more than the headline: FLOPs/MLP
+1.7906e11 → 1.7207e11, an **exact 1.0406×** that is deterministic on every machine and every MLP of
+this shape; times a raw-MSE ratio of **1.0412×** (`t` = +2.87), the sizing model spending the freed
+budget on ~2.5% more samples. Product: adjusted **1.0834×**, `t` = +6.13, 0/1000 failed. Only the
+first factor is guaranteed — the second carries ordinary Monte-Carlo noise, and "nothing statistical
+changes" applies to the *identities*, not to the sample count they pay for. Binding adversarial utilisation improved 0.9170 → 0.9040. It predicted a public score
 of 1.69e-07 and delivered **1.730e-07** — a 2.4% miss, which is as well as a deterministic cost model
 can be expected to transfer through a 50-MLP draw.
 
@@ -851,9 +953,10 @@ spend is a strict upper bound on the executed spend **for any input**, with no p
 public MLPs baked in.
 
 Stress-tested through real flopscope accounting (effective compute / budget): all-positive weights
-(nothing ever dead — the binding case) **0.9040** for `sweep.py` as shipped, 0.9170 for `wmc4`; rank-1 0.9144; depth 5/8/10/64 =
-0.917/0.917/0.883/0.522; He init 0.6698; weights ×10 (float32 overflow) 0.6692; all-negative 0.2150;
-all-zero 0.0474; odd widths 250/255/300 = 0.7208/0.6392/0.6776. **Every case returns a finite
+(nothing ever dead — the binding case) **0.9040**; rank-1 0.9017; depth 5/8/10/16/64 =
+0.904/0.904/0.869/0.845/0.514; He init 0.6575; weights ×10 (float32 overflow) 0.6570; ×0.01
+(underflow) 0.5183; all-negative 0.2113; all-zero 0.0466; odd widths 250/255/300 =
+0.7099/0.6294/0.6672. **Every case returns a finite
 `(depth, width)` array and none reaches 1.0.** Odd widths matter: the recursion checks divisibility
 at every level and falls back to the plain product, so a width it cannot split degrades rather than
 fails.
@@ -868,8 +971,11 @@ ladder must contain exactly one expensive rung.
 The scoring rule bills residual wall time at λ = 1e11 FLOP/s, so arithmetic executed outside
 flopscope's instrumentation is materially cheaper than instrumented arithmetic. We measured the
 mechanism directly — §6.2's depth table is exactly this channel, priced — and **we chose not to
-exploit it**: Phase 1 rank comes from a private re-evaluation on a frozen stack; the starter kit
-tells participants not to; and it is the opposite of what an algorithmic-contribution prize
+exploit it**: Phase 1 prize rank is decided by re-running the nominated submissions on the full
+Phase 1 test suite — the 50 public MLPs plus 50 withheld ones — and *"the public-leaderboard score
+visible during the Competition does not determine prize ranking"* (rules §6), so a channel tuned
+against the visible score buys nothing that decides anything; the starter kit tells participants
+not to; and it is the opposite of what an algorithmic-contribution prize
 rewards. Every FLOP saving reported in this document is a counted-FLOP saving, and §5.3's Strassen
 replication is included precisely *because* flopscope prices it honestly, which we verified by
 measurement rather than assuming.
@@ -905,9 +1011,12 @@ per-MLP mean `|α| = 5.2e-04` against a within-MLP sd of 1.4e-03. *Caught by:* f
 passes. **Concentration is a statement about `Σ`; correctability is a statement about `E[e]`.** For
 an unbiased sample mean the bias is zero *by construction*, yet the energy fraction along any `u`
 is `u'Σu/tr(Σ)`, which equals `1/n` only if `Σ ∝ I` — and ReLU outputs are heteroscedastic, giving
-`Σt⁴/(Σt²)² = 5.8×` isotropic from a calculation with no bias in it. Evaluating the full zero-bias
-prediction against measurement: 59.56% predicted vs 63.24% measured on the truth direction, 19.45%
-vs 20.76% on the constant — **agreement to 6%, with zero bias assumed anywhere.**
+`Σt⁴/(Σt²)² = 0.02271 = 5.8×` isotropic **from a calculation with no bias anywhere in it** — and
+that is only the diagonal term. The rest comes from the off-diagonal: neurons of the same draw are
+strongly positively correlated, so `Σ` has a dominant eigenvector overlapping `t̂`. We do not claim
+to have closed 5.8× → 78.5× numerically. An earlier draft quoted a prediction-vs-measurement table
+here that we could not trace to a committed run when we audited this document, and we removed it.
+The argument does not need it — **the ICC is what carries §7.3, and the ICC is measured.**
 
 **7.4 "Extending the covariance baseline's series will help."** The shipped gain heuristic is
 *exactly* the order-1 truncation of an exact Mehler–Hermite series with elementary coefficients
@@ -1035,23 +1144,27 @@ neutrality*. Variance changes need hundreds to thousands of MLPs whether or not 
 
 ## 9. The open problem, stated precisely
 
-We finish **3.7×** above the measured constructible frontier — twelve independent teams are piled
-at adjusted 4.6e-08 to 1.1e-07, and rank 4 reached 4.62e-08 in only 115 submissions. Nothing in
+We finish **3.7×** above the leading edge of the board's densest band — twelve entries piled at
+adjusted 4.6e-08 to 1.1e-07, the best of them reached in only 115 submissions. We call it a band
+rather than a frontier: our bounds are bounds on *our own estimator class*, and we make no claim
+about what is or is not constructible by anyone else, including the three entries above it. Nothing in
 this document explains that 3.7×, and we say so rather than dressing our ceiling up as the
 problem's.
 
 What we can offer is a sharpened statement of where the remaining factor must live. Since
-`Φ = C·c/B`, and since §4 bounds `C` on the entire exactly-known-mean, cheap-to-evaluate class
-(1.06× gross / 0.95× net) while §6.2 bounds metered `c` from below, the frontier is not reachable by
-rearranging either axis. Two concrete open problems fall out, and we state them precisely because
+`Φ = C·c/B`, and since §4 measures **0.95× net** for the explicit-control-variate branch and
+ceilings of 1.4–1.55× for the best conceivable *affordable* node rule against an 8.3× requirement,
+while §6.2 bounds the metered cost of *this* per-sample pass from below, neither axis reaches the
+frontier by rearrangement — within the estimator class we built. Two concrete open problems fall out, and we state them precisely because
 that is more useful than a verdict.
 
 > **(A) The stochastic one.** Is there a **positive-weight** degree-5 cubature rule on `N(0, I₂₅₆)`
-> with `O(n²)` nodes? §4.2 puts the frontier exactly at degree 5, the last rung that fits in the
-> budget (33,153 nodes, 22% of it). §4.3 shows the known Mysovskikh construction is destroyed by
-> weights that exactness *forces* negative — ESS 941 of 66,306 — while any positive-weight rule
-> would pay at most 1.5×. This is a question about cubature, not about neural networks, and it has
-> a definite answer we do not know.
+> with `O(n²)` nodes? Degree 5 is the last rung inside the budget (33,153 nodes, 22% of it), and
+> §4.3 shows the known Mysovskikh construction is destroyed by weights that exactness *forces*
+> negative — ESS 941 of 66,306 — where any positive-weight rule would pay at most 1.5×. We flag
+> honestly that solving this is **necessary but not sufficient**: §4.2 measures a perfect degree-5
+> rule at 3.02× against the 8.3× the band's edge needs. It is a question about cubature rather than
+> about neural networks, it has a definite answer, and we do not know it.
 >
 > **(B) The deterministic one.** Obtain `μ₃₁ = E[y₃₁]` to relative accuracy `1.03e-04` — 40×
 > tighter than the sample mean of the same ensemble delivers — *and* the layer-31 second-moment
