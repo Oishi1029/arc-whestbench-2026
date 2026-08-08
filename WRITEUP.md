@@ -8,7 +8,7 @@ Task: per-neuron mean activation of the final layer of a bias-free ReLU MLP, wid
 | | |
 |---|---|
 | Best public submission | **#325573**, adjusted final-layer score **1.730e-07** (raw final-layer MSE 2.55e-07, utilisation 0.678) |
-| Estimator | `work/final/sweep.py` — whitened, antithetic, float32 Monte-Carlo sample mean with eight exact cost reductions |
+| Estimator | `estimators/sweep.py` — whitened, antithetic, float32 Monte-Carlo sample mean with eight exact cost reductions |
 | Reliability | 0/50 public MLPs failed; 0/1000 on the local `full` split; worst-case budget utilisation 0.9040 on adversarial inputs |
 | Trajectory | 3.405e-07 → 2.700e-07 → 2.240e-07 → 1.834e-07 (#324358, rank #54) → **1.730e-07** |
 | Constructible frontier | rank 4 at **4.62e-08**. We finish **3.7× above it** and cannot account for the gap — see §9. |
@@ -1069,7 +1069,7 @@ projection (§4.4), or a moment plug-in built from sampled moments (§2.4).
 ## Appendix A: Reproduction manifest
 
 **Code.** The complete solution, every estimator in the lineage, and the ten probe reports cited
-throughout are released at `<REPOSITORY URL>` under `<OSI LICENSE>`. Each estimator's docstring
+throughout are released at **<https://github.com/Oishi1029/arc-whestbench-2026>** under the **MIT licence**. Each estimator's docstring
 carries the measurements for the mechanism it adds, so a claim in this document and the code that
 produced it sit next to each other. All paths below are relative to that repository root.
 
@@ -1091,13 +1091,13 @@ uv run --project work/whest-starterkit whest run --estimator <file.py> --dataset
 
 | # | date | estimator | adjusted score | rank | failed | util |
 |---|---|---|---|---|---|---|
-| #323440 | 2026-08-04 | `work/mine/wmc.py` — whitened + antithetic | 3.405e-07 | #121 | 0/50 | 10.01% |
-| #323892 | 2026-08-05 | `work/mine/wmc2.py` — + exact dead-column pruning | 2.700e-07 | #80 | 0/50 | ~80% |
-| #324076 | 2026-08-05 | `work/mine/wmc3.py` — + a-priori lead-block masking | 2.240e-07 | #68 | 0/50 | 65.99% |
-| #324358 | 2026-08-05 | `work/mine/wmc4.py` — + Strassen | 1.834e-07 | #54 | 0/50 | 70.74% |
-| **#325573** | 2026-08-07 | **`work/final/sweep.py` — + four exact identities (§6.3)** | **1.730e-07** | | **0/50** | **67.8%** |
-| #325572 | 2026-08-07 | `work/mine/wmc5.py` — + layer-1 mean+covariance anchor | 1.860e-07 | | 0/50 | 70.5% |
-| #325574 | 2026-08-07 | `work/final/anchor-cheap.py` — layer-1 full covariance (§6.3) | 1.920e-07 | | 0/50 | 70.8% |
+| #323440 | 2026-08-04 | `estimators/wmc.py` — whitened + antithetic | 3.405e-07 | #121 | 0/50 | 10.01% |
+| #323892 | 2026-08-05 | `estimators/wmc2.py` — + exact dead-column pruning | 2.700e-07 | #80 | 0/50 | ~80% |
+| #324076 | 2026-08-05 | `estimators/wmc3.py` — + a-priori lead-block masking | 2.240e-07 | #68 | 0/50 | 65.99% |
+| #324358 | 2026-08-05 | `estimators/wmc4.py` — + Strassen | 1.834e-07 | #54 | 0/50 | 70.74% |
+| **#325573** | 2026-08-07 | **`estimators/sweep.py` — + four exact identities (§6.3)** | **1.730e-07** | | **0/50** | **67.8%** |
+| #325572 | 2026-08-07 | `estimators/wmc5.py` — + layer-1 mean+covariance anchor | 1.860e-07 | | 0/50 | 70.5% |
+| #325574 | 2026-08-07 | `estimators/anchor-cheap.py` — layer-1 full covariance (§6.3) | 1.920e-07 | | 0/50 | 70.8% |
 
 **The last four rows are an instance of §8.2 and we report them as one.** Their whole spread is
 **11%**, against a ~30% 2σ resolution limit on a 50-MLP board. In particular both anchor builds came
@@ -1110,35 +1110,35 @@ when the public board moved in our favour.
 
 | § | claim | source | split / n / k | re-runnable? |
 |---|---|---|---|---|
-| 1 | mean `t²` = 0.9093 | `work/offline_bench.py` | mini / 100 | yes |
+| 1 | mean `t²` = 0.9093 | `harness/offline_bench.py` | mini / 100 | yes |
 | 1.1 | budget sweep, `p` = 0.950 | scratch driver over `offline_bench.score` | full / 120 | **no — scratch**; method fully specified in §1.1 |
 | 1.2 | `C_plain` = 5.12429e-02, SE 3.3e-05 | OU circle design, `hs_p2_constants.py` (see note) | full / 120 × 65 ρ | **no — scratch** |
-| 2.2 | anchoring ladder, VR 50.8× / 50.6× | `work/adversarial/oracle-anchoring.md` | full / 60 and 64 / k = 4,096, reps 2, CRN | **yes** |
+| 2.2 | anchoring ladder, VR 50.8× / 50.6× | `research/probes/oracle-anchoring.md` | full / 60 and 64 / k = 4,096, reps 2, CRN | **yes** |
 | 2.3 | `bias² = 0.945·eps²`, `eps*` = 1.03e-04 | same | full / 64 | **yes** |
-| 2.4 | commutation 0.000e+00 | recorded in `work/mine/wmc3.py` docstring | full / 24 at k=6,000; 8 at k=24,000 | **no — scratch driver** |
-| 2.4 | GC plug-in 0.9956× (`t` = −5.09) | `work/adversarial/deterministic-closure.md` | full / 64 / k = 4,096 and 16,384, paired CRN | **yes** |
+| 2.4 | commutation 0.000e+00 | recorded in `estimators/wmc3.py` docstring | full / 24 at k=6,000; 8 at k=24,000 | **no — scratch driver** |
+| 2.4 | GC plug-in 0.9956× (`t` = −5.09) | `research/probes/deterministic-closure.md` | full / 64 / k = 4,096 and 16,384, paired CRN | **yes** |
 | 3.1 | max-entropy ladder, 5.077e-09 | same | full / 32 / 8,192 units per number | **yes** |
 | 3.2 | `MSE ≈ 0.048(δμ/σ)²` | same, held-out | full / 16 | **yes** |
-| 3.2 | analytic-propagation crossover at layer 9 | `work/adversarial/analytic-per-layer.md` | full / 40 / k = 4,096 | **yes** |
+| 3.2 | analytic-propagation crossover at layer 9 | `research/probes/analytic-per-layer.md` | full / 40 / k = 4,096 | **yes** |
 | 3.3 | cumulant cost table, `c₂` | arithmetic on arXiv:2605.05179 Table 1 / App. J | — | arithmetic given in §3.3 |
 | 4.1 | spectral `C` predictions | `hs_p2_constants.py`, `hs_p7_verify.py` (see note) | full / 120 × 40 reps | **no — scratch** |
 | 4.1 | built degree-3 rule, `C` = 2.42265e-02 | `hs_p6_rule3.py` (see note) | full / 120 × 64 rotations | **no — scratch** |
 | 4.2 | `R(ρ)` table, `D ≥ 3.77 / 6.82 / 14.95` | `hs_p5_final.py` (see note) | full / 120 × 65 ρ | **no — scratch** |
-| 4.3 | degree-5 build + 70.5× | `d5_tscan.py` (see note), `work/adversarial/degree5-cubature.md` | full / 64 × 2 reps, 128 pairs | **no — scratch** |
-| 4.4 | Stein matrix, 203× anisotropy; `d ≳ 224` | `work/adversarial/active-subspace.md` | full / 64 (48 for d ≥ 160) | **yes** |
-| 4.5 | Sobol 0.94× / 1.018× | post-crash score push, `work/RESEARCH.md` §7h.12 | full / 120 / k = 4,096 and 32,768, paired | **yes** |
+| 4.3 | degree-5 build + 70.5× | `d5_tscan.py` (see note), `research/probes/degree5-cubature.md` | full / 64 × 2 reps, 128 pairs | **no — scratch** |
+| 4.4 | Stein matrix, 203× anisotropy; `d ≳ 224` | `research/probes/active-subspace.md` | full / 64 (48 for d ≥ 160) | **yes** |
+| 4.5 | Sobol 0.94× / 1.018× | post-crash score push, `research/RESEARCH.md` §7h.12 | full / 120 / k = 4,096 and 32,768, paired | **yes** |
 | 4.6 | multilevel identity + allocation | derivation in §4.6; ratio recomputed here from the two published weight anchors | — | **partly — the full `w_l` table is not shipped; see §4.6** |
-| 5.2 | error attribution, `f > 1/2` | `work/gap/cost.py` docstring | full | **no — scratch driver** |
+| 5.2 | error attribution, `f > 1/2` | `experiments/gap_cost.py` docstring | full | **no — scratch driver** |
 | 5.3 | 18106 decomposition | arithmetic on their **published** `N`, MSE, utilisation, 2026-08-05 | — | arithmetic given in §5.3 |
-| 6.1 | whitening 1.869×, antithetic 1.160× | `work/RESEARCH.md` §7h.0 | full / 120 × 3 reps, n = 360 paired | **no — scratch driver**; the harness (`runoff.py`) is committed |
-| 6.2 | metering identities, Strassen depth table | `work/adversarial/cost-floor.md` | one layer, chunk 65,536 and 8,192 | **yes** |
-| 6.3 | `sweep.py` 1.0834×, `t` = +6.13 | `work/final/sweep.py` docstring | full / 1000, paired | **yes** |
-| 6.3 | anchor 1.0832×, `t` = +5.45 | `work/final/anchor-cheap.py` docstring | full / 1000 / k = 64,512, paired CRN | **yes** |
-| 6.4 | budget stress cases | `work/mine/wmc4.py` docstring | synthetic pathological weights | **no — scratch** |
+| 6.1 | whitening 1.869×, antithetic 1.160× | `research/RESEARCH.md` §7h.0 | full / 120 × 3 reps, n = 360 paired | **no — scratch driver**; the harness (`runoff.py`) is committed |
+| 6.2 | metering identities, Strassen depth table | `research/probes/cost-floor.md` | one layer, chunk 65,536 and 8,192 | **yes** |
+| 6.3 | `sweep.py` 1.0834×, `t` = +6.13 | `estimators/sweep.py` docstring | full / 1000, paired | **yes** |
+| 6.3 | anchor 1.0832×, `t` = +5.45 | `estimators/anchor-cheap.py` docstring | full / 1000 / k = 64,512, paired CRN | **yes** |
+| 6.4 | budget stress cases | `estimators/wmc4.py` docstring | synthetic pathological weights | **no — scratch** |
 | 7.2 | rank table, truncation bias | scratch driver | full, same-ensemble | **no — scratch** |
-| 7.3 | ICC, energy fractions | `work/scale_mode.py` | full / 150 × R=5 | **yes** |
-| 7.4 | Mehler orders 1–12 | `work/experiments/mehler.py` | self-generated MLP, 400k target | yes — **but see the caveat below** |
-| 8.2 | split noise floors | `work/offline_bench.py`, `seed_offset` 0–5 | mini / 100 | **yes** |
+| 7.3 | ICC, energy fractions | `harness/scale_mode.py` | full / 150 × R=5 | **yes** |
+| 7.4 | Mehler orders 1–12 | `experiments/mehler.py` | self-generated MLP, 400k target | yes — **but see the caveat below** |
+| 8.2 | split noise floors | `harness/offline_bench.py`, `seed_offset` 0–5 | mini / 100 | **yes** |
 | 8.3 | D1/D2/D3 designs | scratch driver | full / 400 | **no — scratch** |
 
 **On the "no — scratch" rows.** These were run interactively against the two committed harnesses
@@ -1151,8 +1151,8 @@ measurements — among the strongest results in this document — and their driv
 (`hs_p2_constants.py`, `hs_p5_final.py`, `hs_p6_rule3.py`, `hs_p7_verify.py`, `d5_tscan.py`) were
 written to a working directory that has since been cleared. **We could not recover them, and an
 earlier draft of this appendix wrongly marked all five re-runnable.** What survives is the full
-measurement record in `work/adversarial/chaos-spectrum.md` and
-`work/adversarial/degree5-cubature.md`, which state the design, the node construction, the
+measurement record in `research/probes/chaos-spectrum.md` and
+`research/probes/degree5-cubature.md`, which state the design, the node construction, the
 verification tolerances, the MLP and rotation counts and the standard errors — enough to rebuild
 each experiment, but not the same thing as shipping the code. We flag it prominently because §4 is
 the part of this document a reader would most want to check, and it is currently the least
@@ -1164,8 +1164,8 @@ self-generated He-init MLP against a self-computed 400k-sample target. Its `K = 
 is 26% below the 8.03e-05 we measure for `examples/03` through the official harness. Only the
 *relative* `K = 1 → K ≥ 2` comparison, within one experiment on one network, is claimed.
 
-**Full logs.** `work/RESEARCH.md` (chronological research log, including every conclusion this
-document retracts), `work/LITERATURE.md`, `work/adversarial/*.md` (ten probe reports), `STATE.md`.
+**Full logs.** `research/RESEARCH.md` (chronological research log, including every conclusion this
+document retracts), `research/LITERATURE.md`, `research/probes/*.md` (ten probe reports), `STATE.md`.
 
 ---
 

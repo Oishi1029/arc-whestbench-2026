@@ -26,6 +26,9 @@ the write-up and the code that produced it sit next to each other.
 | **`estimators/sweep.py`** | wmc4 + four exact cost identities | **1.730e-07 (#325573)** |
 | **`estimators/merge.py`** | sweep × anchor, both mechanisms | **1.803e-07 (#326022)** |
 
+Paired at n = 1000 against `sweep.py`, `merge.py` measures 1.0619× at `t` = +3.67. On the 50-MLP
+public split it scores 1.027× *behind* it. Write-up §8.2 explains why we believe the first number.
+
 The two nominated for the private re-evaluation are `sweep.py` and `merge.py`.
 
 ## Measurement harness
@@ -37,6 +40,11 @@ baked at 1e9 samples per MLP.
   100 MLPs, against the official harness's ~25 min for 1,000)
 - `harness/runoff.py` — paired run-off with common random numbers at equal FLOP cost
 - `harness/scale_mode.py` — the ICC-across-streams decomposition of §7.3
+
+Plus `experiments/` — the drivers behind specific write-up sections: `mehler.py` and `diag.py`
+(§7.4, the Mehler-series negative), `gap_cost.py` (§5.2 and §6.2, the cost identities and the
+op log), `variance.py` (§4.4, bit-identical to the shipped estimator with radial marginalisation
+off) and `replicate.py` (§5.3, the Strassen replication).
 
 Validated against the official harness to **0.1%** on an estimator ratio and **0.02%** on a FLOP
 count. See write-up §8.
