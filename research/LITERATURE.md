@@ -251,21 +251,7 @@ Reported across topics 18099, 18105, 18108, 18122, 18125:
 
 - `effective_compute = instrumented_FLOPs + 1e11 · residual_seconds`. Arithmetic executed outside
   flopscope's instrumentation is charged only through the wall-time term.
-- Measured **instrumented share** (instrumented FLOPs / effective compute): ~0.93 for ordinary
-  submissions, **below 0.001 for top leaderboard entries**. Reported independently in two threads.
-- Organiser reply (mohanty, 3 Aug): on eval servers only `flopscope-client` is installed;
-  `flopscope.numpy` returns `RemoteArray` with no accessible raw array, so *that specific* bypass
-  is closed. Participants *may* bundle their own NumPy, but after the v0.10.0 repricing and the
-  single-core restriction it should be cheaper to use flopscope.
-- **But the channel is reported still live after v0.10.0** (thylinao, 4 Aug): some submissions
-  still show instrumented share ~1e-05, with instrumented FLOPs identical to three significant
-  figures across all 50 MLPs — a signature inconsistent with an adaptive algorithm.
-- Sweep 3's own sizing: flopscope prices float32 matmul at ~2 FLOPs/MAC, the same convention as
-  real hardware, so the arbitrage factor is `(real FLOP/s on the grader core) / 1e11`. On the
-  Xeon Platinum 8480+ recorded in the dataset metadata, one physical core does ~170–210 GFLOP/s
-  fp32, i.e. **~1.7–2.4x today**; before the 3 Aug single-core restriction, seven cores would have
-  given ~12–15x, matching both the "exceeding 10x" claim and the era in which the top-3 scores
-  were set.
+- **[REDACTED IN THE PUBLIC RELEASE]** — per-entrant instrumented-share figures.
 
 **Recommendation: do not pursue this.** Four reasons, in order of weight: (1) prize ranks come
 from a private re-evaluation on a fresh suite with whatever stack is frozen then, so an
@@ -448,16 +434,11 @@ spend lands ~0.80". Same submission, correct decoding.
 
 ### 5.1 The structure
 
-| rank | adjusted | raw MSE | u | Φ-gain vs us |
-|---|---|---|---|---|
-| 1 joe_wanza | 4.87e-08 | 5.21e-08 | 0.935 | 5.54x |
-| 2 dpskv5 | 5.82e-08 | 7.86e-08 | 0.740 | 4.64x |
-| 3 ely2sh | 6.26e-08 | 5.57e-08 | **1.124** | 4.31x |
-| 5 dstepanov | 8.65e-08 | 7.40e-08 | **1.169** | 3.12x |
-| **8 mliston** | **9.36e-08** | **8.08e-07** | **0.116** | **2.88x** |
-| 4,6,7,9,10,12–16,19,20 | 8.6e-08 – 1.27e-07 | 1.97–2.45e-07 | 0.42–0.54 | 2.1–3.1x |
-| 11 thylinao | 1.064e-07 | 4.14e-07 | 0.257 | 2.54x |
-| **us (#80)** | **2.700e-07** | **3.388e-07** | **0.797** | 1.00x |
+> **[REDACTED IN THE PUBLIC RELEASE.]** A per-entrant table decoding each named
+> account's implied compute multiplier. Withheld for the reason given in
+> `RESEARCH.md` §7g-RETRACTION. The structural observation that survives, and that
+> §5.2 below actually uses, is that a dozen entries cluster tightly in both cost and
+> error — no per-account figures are needed for it.
 
 ### 5.2 Three readings, and which to believe
 
@@ -489,8 +470,7 @@ by firing rate and grouping rows by active-column count. Stated limitation: does
 under architectural changes.
 
 **mliston — rank 8 at u = 0.116, i.e. essentially the 0.1 floor, Φ = 9.36e-08.** This is 2.88x
-better than us *at our own operating point*, from a participant who publicly complained about the
-billing channel (i.e. plausibly playing straight). Note the arithmetic: if mliston were a 1/k
+better than us *at our own operating point*. Note the arithmetic: if mliston were a 1/k
 sampler with our C, raw MSE 8.08e-07 would need k ≈ 29,400, costing ~45% of budget, not 11.6%. So
 either their variance constant is ~4x below ours, or the estimator is not a plain sampler. Either
 way it is an existence proof that **~3x of Φ is available at the floor**.

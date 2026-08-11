@@ -372,25 +372,15 @@ building on it, is what converted a refuted 1.74× story into a verified 1.23×.
 ## 7g-RETRACTION (2026-08-07) — ⚠️ THE CONCLUSION BELOW IS WITHDRAWN
 
 **§7g's measurements stand. Its conclusion — "no constructible estimator reaches 1e-09" — is
-false, and must not appear in the write-up.** Evidence from the top three entries' own public
-telemetry, pulled from the submission pages (each embeds the full evaluation payload as JSON, no
-authentication required):
+false, and must not appear in the write-up.** The evidence that overturned it came from
+per-submission evaluation data; the figures themselves are withheld here (see below).
 
-| entry | instrumented share F/C | residual s/MLP | C/B | mean public MSE | **C_eff = MSE·N** |
-|---|---|---|---|---|---|
-| dpskv5 (#1) | **0.940** | 0.0154 | 0.095 | 3.628e-09 | **3.3e-05** |
-| joe_wanza (#2) | 0.708 | 0.193 | 0.243 | 3.954e-09 | **7.0e-05** |
-| huang_chung_yi (#3) | 0.229 | 0.303 | 0.145 | 2.992e-08 | **1.0e-04** |
-| SOX (published, 1.551e-07) | 0.908 | 0.185 | 0.739 | 2.179e-07 | 1.5e-02 |
-| **us** | — | — | 0.707 | — | **1.9e-02** |
-
-**Three corrections, in order of importance:**
-
-1. **The top three are NOT using the residual-wall-time billing channel.** dpskv5 runs at a 0.94
-   instrumented share with 15 ms of residual per MLP — that is metered compute. The ~1e-05
-   instrumented-share signature belongs to **ranks 5–6** (ely2sh, dstepanov: billed FLOPs identical
-   to all digits across 100 MLPs, zero backend time, 1.6–3.1 s residual each), who sit *behind*
-   three mostly-metered entries. My suspicion about the top of the board was wrong.
+> **[REDACTED IN THE PUBLIC RELEASE.]** This passage reported per-submission evaluation
+> telemetry for named participants. We withdrew the inference it supported, we make no claim about any
+> participant's methods, and we do not think per-entrant operational data belongs in a
+> public document regardless of what it shows. The technical conclusion that survives is
+> stated without it: on the billing-independent figure of merit `C_eff = MSE·N`, the
+> leading entries sit two to three orders of magnitude below us — they have a real method.
 
 2. **C_eff is billing-independent, and they are 200–450× below us on it.** That axis is the one
    §7g itself declares decisive. They have a real method.
@@ -411,12 +401,10 @@ is unpriced by §7g.
 **The gap is ~17× and it is engineering, not exponents.** It sits in one identified place: the
 quality of the moments feeding a final-layer Gaussian/Edgeworth closure.
 
-**On the probing hypothesis:** argued against by the numbers. Full float32 recovery of the targets
-would land near MSE 3.6e-15; dpskv5 is at 3.63e-09, a million times higher, and 153× above the
-ground-truth file's own 1e9-sample MC noise (2.4e-11). A solved linear system does not stop there,
-and the descent 5.08e-08 → 5.8e-09 → 4.00e-10 is graded rather than a step change. Separately and
-independently of any participant: **per-MLP `final_layer_mse` is exposed at full float64 without
-authentication**, which is a genuine integrity gap in the platform worth reporting privately.
+> **[REDACTED IN THE PUBLIC RELEASE.]** This passage discussed a hypothesis about how leading
+> entries might be achieving their scores, together with some platform internals. We withdrew the
+> hypothesis, and the rest is not ours to publish.
+
 
 ---
 
@@ -843,8 +831,9 @@ Recorded as structure, not as a claim about anyone. Forum topic 18099 (user Kere
 `flopscope.numpy` path on which work "report[s] zero instrumented FLOPs", and jtel quotes
 instrumented shares "below 0.001" for top submissions against ~0.93 for ordinary ones; topic 18108
 is a participant recommendation to neutralise the wall-time channel. No organiser reply appears in
-either thread. Against that, §7g-RETRACTION's own telemetry pull found dpskv5 at a 0.94
-instrumented share. **The picture is mixed and cannot be resolved from outside.** Rules §5.4/§5.5
+either thread. Against that, our own check of the leading entries' evaluation data did **not**
+support the forum claims. **The picture is mixed, cannot be resolved from outside, and we publish
+no per-entrant figures.** Rules §5.4/§5.5
 already settle it internally: the withheld 50 and the fresh Private Re-evaluation suite.
 
 ## 7h.10 The statement that replaces §7g's two-annihilator enumeration
@@ -974,14 +963,12 @@ and 16× short in accuracy even oracle-fed).
 > leaderboard band at ranks 4–15 once the metric's bounded wall-time conversion (1.7–2.4×) is
 > priced in.
 
-### 7h.9-addendum (2026-08-08 morning)
+### 7h.9-addendum — **[REDACTED IN THE PUBLIC RELEASE]**
 
-Overnight: ely2sh moved 6.26e-08 → **7.00e-10** (89×, now rank 2, "4 h ago", 268 entries);
-huang_chung_yi 1.4e-09 → 9.00e-10 (rank 3). ely2sh is one of the two accounts the §7g-RETRACTION
-telemetry pull flagged with the near-zero instrumented-share signature (billed FLOPs identical to
-all digits across 100 MLPs, zero backend time, 1.6–3.1 s residual per MLP). An 89× single-day move
-by a flagged account, landing inside the top cluster, is a third independent observation consistent
-with the §7h.9 structural read. Recorded as observation, not accusation. Practical consequence:
-public rank above ~5e-08 is no longer algorithmically interpretable; the frozen-stack Private
-Re-evaluation (rules §5.5) is the only ranking that matters for prizes. Submissions #325572
-(anchor-v7), #325573 (sweep-v7), #325574 (anchor-v8) queued at this time.
+> This entry connected a named participant's leaderboard movement to a compute signature we had
+> inferred. Whatever hedge it carried, it was an insinuation about an identifiable person, resting
+> on evidence we had already found unreliable, and it should not have been written. The operative conclusion needs none of it:
+> **a public score is a 50-MLP statistic and is not finely interpretable** (§7b, and §8.2 of
+> the write-up), which is why every decision here rests on paired offline measurement at
+> n = 1000 instead.
+

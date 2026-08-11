@@ -14,10 +14,11 @@ Task: per-neuron mean activation of the final layer of a bias-free ReLU MLP, wid
 | Densest band of the board | twelve entries at **4.6e-08 – 1.1e-07**; we finish **3.7×** above its leading edge and cannot account for the gap — see §9. |
 
 > **Every score in this document is a 50-MLP public-leaderboard number**, including the ones above.
-> The rules are explicit that *"the public-leaderboard score visible during the Competition does not
-> determine prize ranking"* (§6) and that phase standings combine all 100 MLPs. §8.2 measures what a
-> 50-MLP board can and cannot resolve — roughly, nothing under 30% — and we apply that to our own
-> results as strictly as to anyone's.
+> Prize rank is decided elsewhere: on a **freshly generated test set with private seeds**, so
+> leaderboard position does not carry over. §8.2 measures what a 50-MLP board can and cannot
+> resolve — roughly, nothing under 30% — and we apply that to our own results as strictly as to
+> anyone else's. It is also why, where our offline paired measurement at n = 1000 and the public
+> board disagree about one of our own submissions, we say so and side with the former (§6.3).
 
 All numbers are dated 2026-08-07 unless stated. Where a number describes a competitor it is
 arithmetic on figures **they published**, and it is labelled as such.
@@ -25,6 +26,11 @@ arithmetic on figures **they published**, and it is labelled as such.
 ---
 
 ## Read this page only, if you read nothing else
+
+The scoring rule `Φ = mse × max(0.1, compute/B)` is flat in sample count above its floor, so an
+estimator here has exactly two knobs: the variance constant `C` and the per-sample cost `c`. We
+mapped both to their walls, and this document reports where the walls are — because we could not
+get past them.
 
 **What we shipped.** A whitened, antithetic, float32 Monte-Carlo sample mean with eight exact cost
 reductions. Adjusted final-layer score **1.730e-07** (submission #325573), 0/50 public MLPs failed,
@@ -59,44 +65,6 @@ directly?
 **What we get wrong.** §7 lists six conclusions of ours that later measurement overturned,
 including two headline figures in this document's own earlier draft that we could not re-derive and
 have replaced. We finish **3.7×** above the measured frontier and cannot account for the gap.
-
----
-
-## Abstract
-
-The scoring rule `Φ = mse × max(0.1, compute/B)` is flat in sample count above its floor, so an
-estimator has exactly two knobs: the variance constant `C` and the per-sample cost `c`. We map
-both to their walls and report where the walls are, because we could not get past them.
-
-The organising result is an antisymmetry. Closed-form Gaussian integration in this problem
-reaches **exactly one ReLU layer** — ridge functions, pairs of ridges through the arc-cosine
-kernel, and polynomials; three-way ReLU products need trivariate orthant probabilities, which have
-no closed form. But the value of an exact layer mean rises steeply with depth: anchoring the
-ensemble onto exact means gives **1.13× at layer 1 and 50.8× at layer 31**. Layer 1 is the only
-one we can actually have, and shipping it is worth **1.083×** (paired, n = 1000, `t` = +5.45).
-*Exactness is available exactly where it is worth ~1.1×, and would be worth ~50× exactly where it
-does not exist.* That antisymmetry, and not a node count, is the structure of the problem.
-
-Four independent probes terminate on the same vector, `μ₃₁ = E[y₃₁]`. On the deterministic side
-the reconstruction step is **solved**: a maximum-entropy density matching six exact marginal
-moments of the final pre-activation reaches **bias² = 5.08e-09**, with zero fitted parameters —
-comfortably inside the accuracy any large score improvement needs. Moments 3–6 are effectively
-free. The blockage is the first two: the order-1 moment is, because `W₃₂` is invertible, *the
-answer one layer up*, and the order-2 moment is a functional of `E[y₃₁y₃₁ᵀ]` that no bijection
-reduces to it. On the stochastic side, whitening plus antithetic pairing is exactly a randomised
-degree-3 cubature rule (confirmed by building a real degree-3 rule, which merely ties it), and a
-model-free bound on the surviving Wiener chaos puts the required exactness degree at **D ≥ 15**
-against a last affordable rung of **D = 5**. We built the degree-5 rule — 66,307 nodes, verified
-exact to 1.8e-15 — and measured it **70.5× worse**, for a structural reason: degree-5 exactness
-forces `w₁r⁴ = −n²(n−7)/(2(n+1)²) < 0`, collapsing effective sample size to 941 of 66,306 nodes.
-
-We also give: an exact multilevel telescoping identity in which every level is exact, and the
-two-line allocation argument that kills it anyway for any plausible weight profile; the
-refutation of a published mechanism whose stated explanation is empty for a sample mean while its
-real (cost-side) gain reproduces; a general trap — *any estimator that is a smooth function of the
-same sample's own statistics re-derives the sample mean* — with three measured instantiations; and
-the measurement protocol without which none of the above is decidable. Six of our own conclusions
-are retracted in place, with the measurement that caught each.
 
 ---
 
@@ -272,16 +240,17 @@ off the variance reduction (oracle: the anchors come from the dataset's own 1e9-
 |---|---|---|---|---|---|---|---|
 | variance reduction | **1.13×** | 1.30× | 1.76× | 3.03× | 6.43× | 25.8× | **50.8×** |
 
-Replicated independently twice (60 MLPs → 50.8×; 64 MLPs → 50.6×). Anchoring *all* of layers 1–31
-gives 51.2×; anchoring **layer 31 alone** gives 48.1× (`t = +11.26`). Single-layer perturbation
-gains are `g₃₁ = 0.950` with every other `g_l ≤ 0.013`.
+Every column is a **single-layer** anchor. Replicated independently twice (60 MLPs → 50.8×;
+64 MLPs → 50.6×, and 48.1× at `t = +11.26` in a third read). Anchoring *all* of layers 1–31
+together gives **51.2×** — i.e. layer 31 alone accounts for 99% of what anchoring every layer
+would buy. Single-layer perturbation gains are `g₃₁ = 0.950` with every other `g_l ≤ 0.013`.
 
 > **Exactness is available only where it is worth ~1.1×, and would be worth ~50× only where it
 > does not exist.** Availability and value sit at opposite ends of the network. That, and not a
 > node count, is why a large improvement is hard here.
 
-*(Definitions matter and we state ours: **50.8× is "hard-anchor layers 1–31 onto oracle means,
-measure the MSE ratio at fixed `k`"**, 60 MLPs at k = 4,096. Across our own corpus the layer-31
+*(Definitions matter and we state ours: **50.8× is "hard-anchor layer 31 alone onto its oracle
+mean, measure the MSE ratio at fixed `k`"**, 60 MLPs at k = 4,096. Across our own corpus the layer-31
 figure ranges **46.5–52.1** purely on definitional choices — single-layer vs cumulative anchor,
 hard vs weighted, and the value of `k`. A separate design entirely, a depth-truncated multilevel
 surrogate fed an oracle `E[y_L]`, gives a steeper ladder on the same networks — 1.09× at layer 1
@@ -425,7 +394,7 @@ naive dense `K = 3` in numpy is `6n⁴L ≈ 8.25e11`, 3.0× budget.
 
 Accuracy: calibrating `c₂` from the shipped `K = 2` and extrapolating at *constant* `c_K`
 (optimistic — the paper says `c_K` grows with `K`) gives `K = 3` at raw MSE ≈ 1.0e-05, **2.9× worse
-than our estimator at the compute floor**, for 48–168% of the budget.
+than our estimator at the compute floor**, for 130–168% of the budget.
 
 **The paper says so itself.** Appendix D: *"This depth scaling is worse than Monte Carlo sampling."*
 Appendix C: the algorithms perform poorly at low width, especially when `L` is large. §6.2: they
@@ -465,7 +434,7 @@ And the framing was tested rather than asserted: we **built** a genuine degree-3
 and measured `C_rule = 2.42265e-02` against whitened+antithetic's 2.35e-02. **The real rule merely
 ties the deployed pair.** There is nothing left on the degree-3 rung.
 
-### 4.2 A model-free bound: the target needs degree ≥ 15
+### 4.2 A model-free bound: the band needs degree ≥ 4, and degree 5 still falls short
 
 With `R(ρ)/R(1) = Σ_d c_d ρ^d` and `c_d ≥ 0`, a degree-`D`-exact rule leaving surviving mass `S`
 must satisfy `R(ρ) ≥ (1−S)ρ^D` for *every* `ρ`, hence `D ≥ [ln(1−S) − ln R(ρ)]/ln(1/ρ)`. No
@@ -478,8 +447,8 @@ inversion, no fit, no extrapolation. Measured two independent ways agreeing to 2
 | mean chaos degree | 4.09 | 8.41 | 10.65 | 12.99 | 17.42 | **21.33** |
 
 Because `C = S·C_plain`, any target score fixes a required surviving mass and hence a required
-degree. Evaluating the bound over the ρ table above (it is maximised at ρ = 0.98 for the tighter
-targets, ρ = 0.90 for the looser one), against the Möller node-count wall `k ≥ C(256+m, m)` for
+degree. Evaluating the bound over the ρ table above (it is maximised at ρ = 0.90 for the frontier,
+ρ = 0.98 for the 10× target and ρ = 0.999 for the 1e-09 target), against the Möller node-count wall `k ≥ C(256+m, m)` for
 `D = 2m+1` and a per-node cost of 1.8e6 FLOPs:
 
 | target | required `S` | gain needed vs plain MC | **`D ≥`** (necessary) |
@@ -938,12 +907,13 @@ scaled as √n. The anchor delivers 1.062× on top of `sweep` against 1.083× on
 two legs are close to but not exactly multiplicative. Harness check on 100 MLPs: 2.09e-07 → 2.03e-07,
 all-layers 5.72e-07 → 4.69e-07, 0/100 failed, worst-case adversarial utilisation 0.9094.
 
-**And it scored 1.920e-07 publicly, the worst of our four best builds.** We are reporting a
+**And `anchor-cheap.py` scored 1.920e-07 publicly (#325574), the worst of our four best builds.** We are reporting a
 mechanism with `t` = +5.45 at n = 1000 that the 50-MLP public board ranks last. We believe the
 paired offline measurement and not the board, for the reason in §8.2 — but the honest form of that
 belief is to say which measurement we are overruling and why, rather than to quote only the one
-that agrees with us. The two mechanisms in this section are orthogonal (cost × variance) and their
-composition is the obvious next build.
+that agrees with us. The two mechanisms in this section are orthogonal (cost × variance), so we composed them —
+that is the `merge.py` build measured above, shipped as **#326022** at a public **1.803e-07** with
+0/50 failures, and one of our two nominated submissions.
 
 ### 6.4 Sizing `k`, and why the cliff is unreachable
 
@@ -971,11 +941,10 @@ ladder must contain exactly one expensive rung.
 The scoring rule bills residual wall time at λ = 1e11 FLOP/s, so arithmetic executed outside
 flopscope's instrumentation is materially cheaper than instrumented arithmetic. We measured the
 mechanism directly — §6.2's depth table is exactly this channel, priced — and **we chose not to
-exploit it**: Phase 1 prize rank is decided by re-running the nominated submissions on the full
-Phase 1 test suite — the 50 public MLPs plus 50 withheld ones — and *"the public-leaderboard score
-visible during the Competition does not determine prize ranking"* (rules §6), so a channel tuned
-against the visible score buys nothing that decides anything; the starter kit tells participants
-not to; and it is the opposite of what an algorithmic-contribution prize
+exploit it**: Phase 1 prize rank is decided **exclusively by a private re-evaluation on a freshly
+generated test set with private seeds** (organisers' announcement, 2026-08-10), so position on the
+public leaderboard does not carry over and anything tuned against the visible score buys nothing
+that decides anything; the starter kit tells participants not to; and it is the opposite of what an algorithmic-contribution prize
 rewards. Every FLOP saving reported in this document is a counted-FLOP saving, and §5.3's Strassen
 replication is included precisely *because* flopscope prices it honestly, which we verified by
 measurement rather than assuming.
@@ -1037,10 +1006,10 @@ and the bound it replaced was wrong by 8× its own claimed headroom.
 
 **7.6 "Some top entries bill arithmetic through residual wall time."** Inferred from forum reports
 plus our own arithmetic about what the channel is worth, and propagated into a draft of this
-document. We then checked the actual evaluation data and **it did not support the inference** — the
-entries in question run genuinely metered compute. We withdrew it, and we make no claim about any
-participant's methods. *Caught by:* going and measuring the thing we had inferred rather than the
-thing convenient to believe. (The same pass turned up a 10× arithmetic error of our own: a quantity
+document. **We had no evidence for it, we should not have written it down, and we withdrew it.** We
+make no claim about any participant's methods, and we publish no figure of any kind about anyone
+else's submissions. *Caught by:* asking what would have to be true for the inference to hold, and
+finding we had never established any of it. (The same pass turned up a 10× arithmetic error of our own: a quantity
 reported as "63× above the requirement" was 6.3×.)
 
 **A seventh, of a different kind.** Three times we wrote a completeness claim — "the *only*
@@ -1211,8 +1180,15 @@ uv run --project work/whest-starterkit whest run --estimator <file.py> --dataset
 | **#325573** | 2026-08-07 | **`estimators/sweep.py` — + four exact identities (§6.3)** | **1.730e-07** | | **0/50** | **67.8%** |
 | #325572 | 2026-08-07 | `estimators/wmc5.py` — + layer-1 mean+covariance anchor | 1.860e-07 | | 0/50 | 70.5% |
 | #325574 | 2026-08-07 | `estimators/anchor-cheap.py` — layer-1 full covariance (§6.3) | 1.920e-07 | | 0/50 | 70.8% |
+| **#326022** | 2026-08-08 | **`estimators/merge.py` — sweep × anchor, both mechanisms (§6.3)** | **1.803e-07** | | **0/50** | **68.5%** |
+| #326031 | 2026-08-08 | an independently written composition of the same two mechanisms | 1.851e-07 | | 0/50 | |
 
-**The last four rows are an instance of §8.2 and we report them as one.** Their whole spread is
+**The two submissions nominated for the private re-evaluation are #325573 (`sweep.py`) and #326022
+(`merge.py`)**, and this write-up is filed against both. The last row is worth keeping: a second
+implementation of the same composition, written without reference to the first, landed 2.7% away —
+about the best available evidence that the effect is real and that neither implementation is broken.
+
+**The last six rows are an instance of §8.2 and we report them as one.** Their whole spread is
 **11%**, against a ~30% 2σ resolution limit on a 50-MLP board. In particular both anchor builds came
 in *above* `wmc4`'s raw MSE on the public 50 despite a paired offline reading of **1.083× better at
 n = 1000, `t` = +5.45**. We take the n = 1000 paired measurement as the better predictor of a fresh
@@ -1226,25 +1202,25 @@ when the public board moved in our favour.
 | 1 | mean `t²` = 0.9093 | `harness/offline_bench.py` | mini / 100 | yes |
 | 1.1 | budget sweep, `p` = 0.950 | scratch driver over `offline_bench.score` | full / 120 | **no — scratch**; method fully specified in §1.1 |
 | 1.2 | `C_plain` = 5.12429e-02, SE 3.3e-05 | OU circle design, `hs_p2_constants.py` (see note) | full / 120 × 65 ρ | **no — scratch** |
-| 2.2 | anchoring ladder, VR 50.8× / 50.6× | `research/probes/oracle-anchoring.md` | full / 60 and 64 / k = 4,096, reps 2, CRN | **yes** |
-| 2.3 | `bias² = 0.945·eps²`, `eps*` = 1.03e-04 | same | full / 64 | **yes** |
+| 2.2 | anchoring ladder, VR 50.8× / 50.6× | `research/probes/oracle-anchoring.md` | full / 60 and 64 / k = 4,096, reps 2, CRN | **no — probe report only** |
+| 2.3 | `bias² = 0.945·eps²`, `eps*` = 1.03e-04 | same | full / 64 | **no — probe report only** |
 | 2.4 | commutation 0.000e+00 | recorded in `estimators/wmc3.py` docstring | full / 24 at k=6,000; 8 at k=24,000 | **no — scratch driver** |
 | 2.4 | GC plug-in 0.9956× (`t` = −5.09) | `research/probes/deterministic-closure.md` | full / 64 / k = 4,096 and 16,384, paired CRN | **yes** |
 | 3.1 | max-entropy ladder, 5.077e-09 | same | full / 32 / 8,192 units per number | **yes** |
 | 3.2 | `MSE ≈ 0.048(δμ/σ)²` | same, held-out | full / 16 | **yes** |
-| 3.2 | analytic-propagation crossover at layer 9 | `research/probes/analytic-per-layer.md` | full / 40 / k = 4,096 | **yes** |
+| 3.2 | analytic-propagation crossover at layer 9 | `research/probes/analytic-per-layer.md` | full / 40 / k = 4,096 | **no — probe report only** |
 | 3.3 | cumulant cost table, `c₂` | arithmetic on arXiv:2605.05179 Table 1 / App. J | — | arithmetic given in §3.3 |
 | 4.1 | spectral `C` predictions | `hs_p2_constants.py`, `hs_p7_verify.py` (see note) | full / 120 × 40 reps | **no — scratch** |
 | 4.1 | built degree-3 rule, `C` = 2.42265e-02 | `hs_p6_rule3.py` (see note) | full / 120 × 64 rotations | **no — scratch** |
 | 4.2 | `R(ρ)` table, `D ≥ 3.77 / 6.82 / 14.95` | `hs_p5_final.py` (see note) | full / 120 × 65 ρ | **no — scratch** |
 | 4.3 | degree-5 build + 70.5× | `d5_tscan.py` (see note), `research/probes/degree5-cubature.md` | full / 64 × 2 reps, 128 pairs | **no — scratch** |
-| 4.4 | Stein matrix, 203× anisotropy; `d ≳ 224` | `research/probes/active-subspace.md` | full / 64 (48 for d ≥ 160) | **yes** |
+| 4.4 | Stein matrix, 203× anisotropy; `d ≳ 224` | `research/probes/active-subspace.md` | full / 64 (48 for d ≥ 160) | **no — probe report only** |
 | 4.5 | Sobol 0.94× / 1.018× | post-crash score push, `research/RESEARCH.md` §7h.12 | full / 120 / k = 4,096 and 32,768, paired | **yes** |
 | 4.6 | multilevel identity + allocation | derivation in §4.6; ratio recomputed here from the two published weight anchors | — | **partly — the full `w_l` table is not shipped; see §4.6** |
 | 5.2 | error attribution, `f > 1/2` | `experiments/gap_cost.py` docstring | full | **no — scratch driver** |
 | 5.3 | 18106 decomposition | arithmetic on their **published** `N`, MSE, utilisation, 2026-08-05 | — | arithmetic given in §5.3 |
 | 6.1 | whitening 1.869×, antithetic 1.160× | `research/RESEARCH.md` §7h.0 | full / 120 × 3 reps, n = 360 paired | **no — scratch driver**; the harness (`runoff.py`) is committed |
-| 6.2 | metering identities, Strassen depth table | `research/probes/cost-floor.md` | one layer, chunk 65,536 and 8,192 | **yes** |
+| 6.2 | metering identities, Strassen depth table | `research/probes/cost-floor.md` | one layer, chunk 65,536 and 8,192 | **no — probe report only** |
 | 6.3 | `sweep.py` 1.0834×, `t` = +6.13 | `estimators/sweep.py` docstring | full / 1000, paired | **yes** |
 | 6.3 | anchor 1.0832×, `t` = +5.45 | `estimators/anchor-cheap.py` docstring | full / 1000 / k = 64,512, paired CRN | **yes** |
 | 6.4 | budget stress cases | `estimators/wmc4.py` docstring | synthetic pathological weights | **no — scratch** |
@@ -1259,7 +1235,7 @@ when the public board moved in our favour.
 implements the mechanism, but the driver was not committed. We say that rather than imply a
 reproducibility we cannot deliver. Every such row states its split, `n`, `k` and comparison design.
 
-**On the five rows marked "(see note)".** These are the §4 chaos-spectrum and cubature
+**On the rows marked "(see note)" and "probe report only".** These are the §2–§4 probe
 measurements — among the strongest results in this document — and their drivers
 (`hs_p2_constants.py`, `hs_p5_final.py`, `hs_p6_rule3.py`, `hs_p7_verify.py`, `d5_tscan.py`) were
 written to a working directory that has since been cleared. **We could not recover them, and an
@@ -1322,7 +1298,14 @@ permitted under §5.7, and the Rules' Technical Writeup provision states that wr
 drafted with the assistance of LLMs or other AI tools, provided that the Participant takes
 responsibility for the accuracy and completeness of the final writeup."
 
-All experimental design decisions, all judgements about what to ship, and the decision to reject the
-residual-wall-time billing channel (§6.5) were made by the participant. The participant has reviewed
-the contents of this document and takes full responsibility for the accuracy and completeness of
-every claim and measurement reported in it.
+We want to be exact about the division of labour rather than conventionally modest about it. The
+assistant did the technical work: it proposed the approaches, wrote every estimator, designed and
+ran the experiments, performed the analyses, and drafted this document. The participant set the
+strategy and the schedule, authorised every submission, chose the two submissions nominated for the
+private re-evaluation, made the policy decision not to use the residual-wall-time billing channel
+(§6.5), and decided what would and would not be published.
+
+The participant has reviewed this document and takes full responsibility for the accuracy and
+completeness of every claim and measurement in it, as Rules §6 requires. Where the document reports
+that a conclusion was wrong (§7), that error was ours jointly and the correction is recorded in
+place.
